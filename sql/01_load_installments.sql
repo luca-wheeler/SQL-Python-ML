@@ -13,10 +13,10 @@ CREATE SCHEMA IF NOT EXISTS raw;
 DROP TABLE IF EXISTS raw.installments_payments;
 
 CREATE TABLE raw.installments_payments (
-    sk_id_prev              INTEGER,
-    sk_id_curr              INTEGER,
+    sk_id_prev              NUMERIC,
+    sk_id_curr              NUMERIC,
     num_installment_version  NUMERIC,
-    num_installment_number   INTEGER,
+    num_installment_number   NUMERIC,
     days_installment         NUMERIC,
     days_entry_payment      NUMERIC,
     amt_installment          NUMERIC,
