@@ -5,7 +5,7 @@
 -- 1. Row count
 -- Expected: 13,605,401 (wc -l on the CSV minus 1 header line)
 SELECT COUNT(*) AS total_rows
-FROM installments_payments;
+FROM raw.installments_payments;
 
 -- 2. NULL count per column
 -- Found: only days_entry_payment and amt_payment have NULLs (2,905 each)
@@ -19,13 +19,13 @@ SELECT
     COUNT(*) - COUNT(days_entry_payment)      AS days_entry_payment_nulls,
     COUNT(*) - COUNT(amt_installment)         AS amt_installment_nulls,
     COUNT(*) - COUNT(amt_payment)             AS amt_payment_nulls
-FROM installments_payments;
+FROM raw.installments_payments;
 
 -- 3. Are the NULLs in the same rows? (instalments due but never paid)
 -- Expect: 2,905
 -- Found: the NULLs are the same rows
 SELECT COUNT(*) AS missing_payment_rows
-FROM installments_payments
+FROM raw.installments_payments
 WHERE days_entry_payment IS NULL
   AND amt_payment IS NULL;
 
@@ -33,13 +33,13 @@ WHERE days_entry_payment IS NULL
 -- Expected: 0 for each, meaning it's safe to cast to INTEGER during cleaning.
 -- NULLs are skipped (NULL <> x is NULL, not true).
 SELECT COUNT(*) AS days_installment_non_whole
-FROM installments_payments
+FROM raw.installments_payments
 WHERE days_installment <> TRUNC(days_installment);
 
 SELECT COUNT(*) AS days_entry_payment_non_whole
-FROM installments_payments
+FROM raw.installments_payments
 WHERE days_entry_payment <> TRUNC(days_entry_payment);
 
 SELECT COUNT(*) AS num_installment_version_non_whole
-FROM installments_payments
+FROM raw.installments_payments
 WHERE num_installment_version <> TRUNC(num_installment_version);

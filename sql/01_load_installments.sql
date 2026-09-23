@@ -8,9 +8,11 @@
 
 \timing on
 
-DROP TABLE IF EXISTS installments_payments;
+CREATE SCHEMA IF NOT EXISTS raw;
 
-CREATE TABLE installments_payments (
+DROP TABLE IF EXISTS raw.installments_payments;
+
+CREATE TABLE raw.installments_payments (
     sk_id_prev              INTEGER,
     sk_id_curr              INTEGER,
     num_installment_version  NUMERIC,
@@ -21,6 +23,6 @@ CREATE TABLE installments_payments (
     amt_payment             NUMERIC
 );
 
-COPY installments_payments
+COPY raw.installments_payments
 FROM '/data/raw/installments_payments.csv'
 WITH (FORMAT csv, HEADER true);
