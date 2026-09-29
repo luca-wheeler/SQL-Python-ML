@@ -49,7 +49,7 @@ For scale, the strongest kept columns score: `ext_source_3` 0.359, `ext_source_1
 | | `days_id_publish`, `days_last_phone_change` | → INTEGER | Recent changes to ID or phone are a known risk signal |
 | Social circle | `def_30_cnt_social_circle`, `def_60_cnt_social_circle` | → INTEGER | Defaults among the applicant's contacts |
 | Documents and contact | `flag_document_3` | → INTEGER | The only common document flag (71% provide it) |
-| | `flag_work_phone` | → INTEGER | Contact stability |
+| | `flag_work_phone` | → INTEGER | Contact stability. Treated as a work phone (see *Data dictionary discrepancy*) |
 | Credit bureau enquiries | `amt_req_credit_bureau_qrt`, `amt_req_credit_bureau_year` | → INTEGER | Recent credit-seeking behaviour |
 | Building | `totalarea_mode` | Unchanged | One summary stands in for 47 building columns |
 
@@ -66,6 +66,16 @@ For scale, the strongest kept columns score: `ext_source_3` 0.359, `ext_source_1
 | Short-window enquiries | 4 | `amt_req_credit_bureau_hour`, `_day`, `_week`, `_mon` | Best Gini 0.010; hour and day are non-zero for 0.6% of applicants | Sparse; quarter and year windows kept |
 | Application timing | 2 | `weekday_appr_process_start`, `hour_appr_process_start` | Best Gini 0.048 | Describe when the form was processed, not the borrower |
 | Accompanying person | 1 | `name_type_suite` | Gini 0.015 | Weak and hard to justify as a credit factor |
+
+## Data dictionary discrepancy: phone flags
+
+`HomeCredit_columns_description.csv` describes `flag_work_phone` and `flag_phone` both as "home phone", and `flag_emp_phone` as "work phone". Check 11 in `sql/03_checks.sql` tests each against the not-employed group (`days_employed = 365243`):
+
+- `flag_work_phone` is 0% for all 55,374 not-employed applicants and about 24% for the employed. That fits a work phone, so the dictionary label looks wrong. We keep the column and treat it as a work phone.
+- `flag_phone` is about 30% in both groups, independent of employment. That fits a home phone. Rejected as before (weak signal).
+- `flag_emp_phone` duplicates `is_not_employed`, so it stays rejected.
+
+This is inferred from the data. The dictionary is the only official description, so the meaning of `flag_work_phone` is likely, not certain.
 
 ## Method: single-column Gini
 
