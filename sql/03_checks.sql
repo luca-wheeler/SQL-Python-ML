@@ -166,3 +166,28 @@ UNION ALL
 SELECT 'flag_own_realty', flag_own_realty, COUNT(*)
 FROM raw.application_train GROUP BY flag_own_realty
 ORDER BY flag, value;
+
+-- 11. Do the phone flags mean what the data dictionary says?
+-- HomeCredit_columns_description.csv labels flag_work_phone AND flag_phone both as
+-- "home phone", and flag_emp_phone as "work phone". Two columns can't both be the
+-- home phone, so we test each flag against the 365243 (not employed) group.
+-- Expected:
+--   not_employed f, emp_phone 0 |     12 applicants | work_phone 25.0% | phone 58.3%
+--   not_employed f, emp_phone 1 | 252125 applicants | work_phone 24.3% | phone 27.8%
+--   not_employed t, emp_phone 0 |  55374 applicants | work_phone  0.0% | phone 29.6%
+-- Reading it:
+--   flag_work_phone is 0% for everyone with no employer, so it behaves like a work
+--   phone, not a home phone: the dictionary label looks wrong.
+--   flag_phone is about 30% in both groups, so it does not depend on employment,
+--   which fits a home phone.
+--   flag_emp_phone is 0 for the not-employed group and 1 for almost everyone else,
+--   so it duplicates is_not_employed.
+SELECT
+    (days_employed = 365243)                        AS not_employed,
+    flag_emp_phone                                  AS emp_phone,
+    COUNT(*)                                        AS applicants,
+    ROUND(100.0 * AVG(flag_work_phone), 1)          AS pct_work_phone_1,
+    ROUND(100.0 * AVG(flag_phone), 1)               AS pct_phone_1
+FROM raw.application_train
+GROUP BY 1, 2
+ORDER BY 1, 2;
