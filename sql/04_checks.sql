@@ -4,9 +4,9 @@
 -- Each check compares the clean table with what 03_checks.sql found in the raw table.
 -- The checks fall into four groups:
 --   1-2    shape: right number of rows and columns?
---   3-7    fixes: did each cleaning decision work?
---   8      types: is each column the type we intended?
---   9-10   safety: did cleaning keep the real signal and the real NULLs?
+--   3-8    fixes: did each cleaning decision work?
+--   9      types: is each column the type we intended?
+--   10-11  safety: did cleaning keep the real signal and the real NULLs?
 
 \timing on
 
@@ -53,24 +53,34 @@ SELECT
 FROM clean.application_train;
 
 -- 6. Check that Y/N flags are now 1/0
--- Expect: own_car 104587, own_realty 213312, car_nulls 0, car_bad 0
+-- Expect: own_car 104587, own_realty 213312, car_nulls 0
 -- Summing a 0/1 column counts the 1s, so these match the 'Y' counts from 03_checks.sql
--- car_bad counts any value that is not 0 or 1
 SELECT
-    SUM(flag_own_car)                                  AS own_car,
-    SUM(flag_own_realty)                               AS own_realty,
-    COUNT(*) - COUNT(flag_own_car)                     AS car_nulls,
-    COUNT(*) FILTER (WHERE flag_own_car NOT IN (0, 1)) AS car_bad
+    SUM(flag_own_car)              AS own_car,
+    SUM(flag_own_realty)           AS own_realty,
+    COUNT(*) - COUNT(flag_own_car) AS car_nulls
 FROM clean.application_train;
 
--- 7. Check that the one decimal days_registration was rounded
+-- 7. Check that every 0/1 column holds only 0 or 1
+-- Expect: all five counts 0
+-- A bad value is anything other than 0 or 1, including NULL
+-- NULL NOT IN (0, 1) is NULL, not true, so NOT IN alone would miss NULLs: we add IS NULL
+SELECT
+    COUNT(*) FILTER (WHERE is_not_employed NOT IN (0, 1) OR is_not_employed IS NULL) AS is_not_employed_bad,
+    COUNT(*) FILTER (WHERE flag_own_car    NOT IN (0, 1) OR flag_own_car    IS NULL) AS flag_own_car_bad,
+    COUNT(*) FILTER (WHERE flag_own_realty NOT IN (0, 1) OR flag_own_realty IS NULL) AS flag_own_realty_bad,
+    COUNT(*) FILTER (WHERE flag_document_3 NOT IN (0, 1) OR flag_document_3 IS NULL) AS flag_document_3_bad,
+    COUNT(*) FILTER (WHERE flag_work_phone NOT IN (0, 1) OR flag_work_phone IS NULL) AS flag_work_phone_bad
+FROM clean.application_train;
+
+-- 8. Check that the one decimal days_registration was rounded
 -- Expect: sk_id_curr 408583, days_registration -10116
 -- In the raw table this applicant had -10116.041666666662
 SELECT sk_id_curr, days_registration
 FROM clean.application_train
 WHERE sk_id_curr = 408583;
 
--- 8. Check that column types are what we intended
+-- 9. Check that column types are what we intended
 -- Expect: age_years numeric, amt_credit numeric, cnt_children integer,
 --         code_gender text, days_registration integer, flag_own_car integer
 SELECT column_name, data_type
@@ -81,7 +91,7 @@ WHERE table_schema = 'clean'
                       'age_years', 'amt_credit', 'code_gender')
 ORDER BY column_name;
 
--- 9. Check default rate by is_not_employed
+-- 10. Check default rate by is_not_employed
 -- Expect: 0 -> 252137 applicants, 8.66% | 1 -> 55374 applicants, 5.40%
 -- The average of a 0/1 column is the share of 1s, so AVG(target) is the default rate
 -- The not-employed group defaults less, which is why we kept a flag as well as the NULL
@@ -93,7 +103,7 @@ FROM clean.application_train
 GROUP BY is_not_employed
 ORDER BY is_not_employed;
 
--- 10. Check that real missing values were carried over unchanged
+-- 11. Check that real missing values were carried over unchanged
 -- Expect: fam_nulls 2, car_age_nulls 202929, req_year_nulls 41519,
 --         totalarea_nulls 148431, ext1_nulls 173378
 -- These columns were only copied or cast, so cleaning must not add or lose NULLs
