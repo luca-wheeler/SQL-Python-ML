@@ -38,12 +38,14 @@ SELECT
     ROUND(
         SUM(amt_credit_sum_debt) FILTER (
             WHERE credit_active = 'Active'
+            AND amt_credit_sum IS NOT NULL
             AND amt_credit_sum_debt IS NOT NULL
         )
         /
         NULLIF(
             (SUM(amt_credit_sum) FILTER (
-                WHERE credit_active = 'Active' 
+                WHERE credit_active = 'Active'
+                AND amt_credit_sum IS NOT NULL
                 AND amt_credit_sum_debt IS NOT NULL
             )),
             0
